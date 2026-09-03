@@ -147,14 +147,18 @@ function Swait(NUMBER)
 	end
 end
 
--- ===== ДОБАВЛЕННАЯ ФУНКЦИЯ attackuno (исправляет зависание) =====
+-- ===== ИСПРАВЛЕННАЯ ФУНКЦИЯ attackuno (мгновенная смерть с классическим эффектом) =====
 function attackuno(target)
-    -- Можно оставить пустой или добавить нанесение урона
-    -- Например:
-    -- local hum = target:FindFirstChildOfClass("Humanoid")
-    -- if hum then hum.Health = hum.Health - 10 end
+    local hum = target:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Health > 0 and target ~= CHARACTER then
+        hum.Health = 0
+        -- Разрываем все соединения и включаем падение
+        target:BreakJoints()
+        hum.PlatformStand = true
+        -- Дополнительно можно добавить эффект разлета частей (уже есть в других функциях)
+    end
 end
--- ============================================================
+-- =================================================================================
 
 --//====================================================\\--
 --||                       CLERP
