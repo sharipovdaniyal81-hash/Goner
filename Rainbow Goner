@@ -122,15 +122,11 @@ game:GetService("RunService").Heartbeat:connect(function(s, p)
 	end
 end)
 function PositiveAngle(NUMBER)
-	if NUMBER >= 0 then
-		NUMBER = 0
-	end
+	if NUMBER >= 0 then NUMBER = 0 end
 	return NUMBER
 end
 function NegativeAngle(NUMBER)
-	if NUMBER <= 0 then
-		NUMBER = 0
-	end
+	if NUMBER <= 0 then NUMBER = 0 end
 	return NUMBER
 end
 function Swait(NUMBER)
@@ -143,7 +139,7 @@ function Swait(NUMBER)
 	end
 end
 
--- ===== ИСПРАВЛЕННАЯ ФУНКЦИЯ attackuno =====
+-- ===== attackuno =====
 function attackuno(target)
     local hum = target:FindFirstChildOfClass("Humanoid")
     if hum and hum.Health > 0 and target ~= CHARACTER then
@@ -152,7 +148,6 @@ function attackuno(target)
         hum.PlatformStand = true
     end
 end
--- =================================================================================
 
 --//====================================================\\--
 --||                       CLERP
@@ -167,12 +162,8 @@ function QuaternionFromCFrame(cf)
 		return (m21 - m12) * recip, (m02 - m20) * recip, (m10 - m01) * recip, s * 0.5
 	else
 		local i = 0
-		if m11 > m00 then
-			i = 1
-		end
-		if m22 > (i == 0 and m00 or m11) then
-			i = 2
-		end
+		if m11 > m00 then i = 1 end
+		if m22 > (i == 0 and m00 or m11) then i = 2 end
 		if i == 0 then
 			local s = math.sqrt(m00 - m11 - m22 + 1)
 			local recip = 0.5 / s
@@ -187,7 +178,7 @@ function QuaternionFromCFrame(cf)
 		end
 	end
 end
- 
+
 function QuaternionToCFrame(px, py, pz, x, y, z, w)
 	local xs, ys, zs = x + x, y + y, z + z
 	local wx, wy, wz = w * xs, w * ys, w * zs
@@ -199,7 +190,7 @@ function QuaternionToCFrame(px, py, pz, x, y, z, w)
 	local zz = z * zs
 	return CFrame.new(px, py, pz, 1 - (yy + zz), xy - wz, xz + wy, xy + wz, 1 - (xx + zz), yz - wx, xz - wy, yz + wx, 1 - (xx + yy))
 end
- 
+
 function QuaternionSlerp(a, b, t)
 	local cosTheta = a[1] * b[1] + a[2] * b[2] + a[3] * b[3] + a[4] * b[4]
 	local startInterp, finishInterp;
@@ -263,21 +254,21 @@ local ID
 	local PLAYING = (TABLE.PLAYING or true)
 	local PLAYONREMOVE = (TABLE.PLAYONREMOVE or false)
 	local DOESDEBRIS = (TABLE.DOESDEBRIS or true)
-		local SOUND = IT("Sound",PARENT)
-		SOUND.SoundId = ID
-		SOUND.Volume = VOLUME
-		SOUND.Pitch = PITCH
-		SOUND.Looped = LOOP
-		SOUND.MaxDistance = MAXDISTANCE
-		SOUND.EmitterSize = EMITTERSIZE
-		SOUND.PlayOnRemove = PLAYONREMOVE
-		if DOESDEBRIS == true and PLAYING == true and LOOP == false then
-			Debris:AddItem(SOUND,SOUND.TimeLength+5)
-		end
-		if PLAYING == true then
-			SOUND:Play()
-		end
-		return SOUND
+	local SOUND = IT("Sound",PARENT)
+	SOUND.SoundId = ID
+	SOUND.Volume = VOLUME
+	SOUND.Pitch = PITCH
+	SOUND.Looped = LOOP
+	SOUND.MaxDistance = MAXDISTANCE
+	SOUND.EmitterSize = EMITTERSIZE
+	SOUND.PlayOnRemove = PLAYONREMOVE
+	if DOESDEBRIS == true and PLAYING == true and LOOP == false then
+		Debris:AddItem(SOUND,SOUND.TimeLength+5)
+	end
+	if PLAYING == true then
+		SOUND:Play()
+	end
+	return SOUND
 end
 function OofOuchBlood(LOCATION,TO,AMOUNT)
 	local P = CreatePart(3, Effects, "Granite", 0, 1, BRICKC("Pearl"), "Blood", VT(0,0,0), true)
@@ -311,9 +302,7 @@ function CreatePart(FORMFACTOR, PARENT, MATERIAL, REFLECTANCE, TRANSPARENCY, BRI
 	NEWPART.CanCollide = false
 	NEWPART.Locked = true
 	NEWPART.Anchored = true
-	if ANCHOR == false then
-		NEWPART.Anchored = false
-	end
+	if ANCHOR == false then NEWPART.Anchored = false end
 	NEWPART.BrickColor = BRICKC(tostring(BRICKCOLOR))
 	NEWPART.Name = NAME
 	NEWPART.Size = SIZE
@@ -432,9 +421,7 @@ function Chatter(Text,Timer)
 		tecks2.TextStrokeColor3 = Color3.fromRGB(255,0,0)
 		tecks2.Size = UDim2.new(1,0,0.5,0)
 		for i = 1,string.len(Text),1 do
-			if naeeym2.Parent ~= CHARACTER then 
-				break
-			end
+			if naeeym2.Parent ~= CHARACTER then break end
 			tecks2.Text = string.sub(Text,1,i)
 			wait(Timer)
 		end
@@ -602,7 +589,6 @@ GUI.ToggleButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- ===== ДОБАВЛЕННЫЙ ОБРАБОТЧИК ДЛЯ КНОПОК УПРАВЛЕНИЯ =====
 for _, btn in pairs(GUI.ToggleButton.Controls:GetChildren()) do
     if btn:IsA("TextButton") then
         btn.MouseButton1Click:Connect(function()
@@ -613,7 +599,6 @@ for _, btn in pairs(GUI.ToggleButton.Controls:GetChildren()) do
         end)
     end
 end
--- ========================================================
 
 --//====================================================\\--
 --||                     ABILITIES
@@ -1202,15 +1187,14 @@ HUM.Name = PLAYER.UserId
 script.Parent = PLAYER.Backpack
 
 --//====================================================\\--
---||     RAINBOW ADDON (следит за новыми деталями)      ||
+--||   RAINBOW ADDON v2 (по размеру: тело/шипы/кепка)   ||
 --\\====================================================//--
 do
 	local RAINBOW_PARTS = {}
 	local RAINBOW_HUE = 0
-	local PROCESSED = {}          -- уже обработанные детали
-	local GRAY_CAP_PARTS = {}     -- серые детали (кепка), не перекрашиваем
+	local PROCESSED = {}
 
-	-- Радужный цветовой цикл
+	-- Цикл перелива — только для частей из RAINBOW_PARTS
 	task.spawn(function()
 		while true do
 			RAINBOW_HUE = (RAINBOW_HUE + 0.01) % 1
@@ -1224,7 +1208,6 @@ do
 		end
 	end)
 
-	-- Применить радугу к детали
 	local function AddRainbow(part, transparency)
 		if not part or not part:IsA("BasePart") then return end
 		if transparency then part.Transparency = transparency end
@@ -1232,48 +1215,52 @@ do
 		table.insert(RAINBOW_PARTS, part)
 	end
 
-	-- Следим за ARMOR и SWORD постоянно — детали грузятся асинхронно
 	task.spawn(function()
 		while true do
-			-- == МЕЧ ==
+			-- ===== МЕЧ =====
 			if SWORD and SWORD.Parent and not PROCESSED[SWORD] then
 				PROCESSED[SWORD] = true
-				SWORD.Transparency = 0.35
 				SWORD.Material = Enum.Material.Neon
-				AddRainbow(SWORD, 0.35)
+				AddRainbow(SWORD, 0.4)
 			end
 
-			-- == БРОНЯ ==
+			-- ===== БРОНЯ =====
 			if ARMOR and HEAD then
 				for _, part in pairs(ARMOR:GetDescendants()) do
-					if part:IsA("BasePart") and not PROCESSED[part] then
+					if part:IsA("BasePart") and part ~= SWORD and not PROCESSED[part] then
 						PROCESSED[part] = true
 
-						local c = part.Color
-						local isBlack = (c.R < 0.25 and c.G < 0.25 and c.B < 0.25)
-						local isRed   = (c.R > 0.5 and c.G < 0.5 and c.B < 0.5)
+						local sz = part.Size
+						local minDim = math.min(sz.X, sz.Y, sz.Z)
+						local volume = sz.X * sz.Y * sz.Z
 
-						-- Кепка = тёмная деталь, лежащая над головой
+						-- ШИП = очень тонкая ИЛИ маленькая деталь
+						local isSpike = (minDim < 0.6) or (volume < 1.5)
+
+						-- КЕПКА = над головой
 						local aboveHead = false
 						if HEAD and HEAD.Parent then
 							aboveHead = part.Position.Y > (HEAD.Position.Y + 0.6)
 						end
 
-						if isBlack and aboveHead then
-							-- Серая "незатекстуренная" кепка
-							part.Color = Color3.fromRGB(120, 120, 120)
-							part.Material = Enum.Material.SmoothPlastic
-							part.Reflectance = 0
-							GRAY_CAP_PARTS[part] = true
-						elseif (isBlack or isRed) and part ~= SWORD then
-							-- Шипы + красная улыбка → радуга
-							AddRainbow(part)
+						if aboveHead then
+							-- Кепка: ТЁМНАЯ но неоновая (без радуги!)
+							part.Material = Enum.Material.Neon
+							part.Color = Color3.fromRGB(30, 30, 30)
+							part.Transparency = 0
+						elseif isSpike then
+							-- Шипы: радуга + прозрачность
+							AddRainbow(part, 0.3)
+						else
+							-- ТЕЛО: неоновое, сохраняет свой цвет (не радужное)
+							part.Material = Enum.Material.Neon
+							-- Цвет не меняем!
 						end
 					end
 				end
 			end
 
-			task.wait(0.5)  -- проверять каждые 0.5 сек
+			task.wait(0.5)
 		end
 	end)
 end
