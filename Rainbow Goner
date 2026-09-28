@@ -1187,29 +1187,15 @@ HUM.Name = PLAYER.UserId
 script.Parent = PLAYER.Backpack
 
 --//====================================================\\--
---||   RAINBOW ADDON v4 (шипы + меч + TRAIL + лицо)     ||
+--||   RAINBOW ADDON (финальный, безопасный)            ||
 --\\====================================================//--
 do
-	-- ================== НАСТРОЙКИ ==================
-	local SPIKES_RAINBOW      = true
-	local SPIKES_TRANSPARENCY = 0.3
-	local SWORD_RAINBOW       = true
-	local SWORD_TRANSPARENCY  = 0.5
-	local TRAIL_RAINBOW       = true       -- ← радужный след при взмахе
-	local CAP_DARK            = true
-	local BODY_NEON           = true
-	local RESTORE_FACE        = true       -- ← вернуть жуткое лицо
-	local FACE_ID             = 145854465  -- жуткая улыбка
-	-- Шип = деталь меньше чем SPIKE_RATIO от самой крупной детали тела
-	local SPIKE_RATIO         = 0.1
-	-- ===============================================
-
-	local RAINBOW_PARTS  = {}
+	local RAINBOW_PARTS = {}
 	local RAINBOW_TRAILS = {}
-	local RAINBOW_HUE    = 0
-	local PROCESSED      = {}
+	local RAINBOW_HUE   = 0
+	local PROCESSED     = {}
 
-	-- Радужный цикл (для деталей + Trail)
+	-- Радужный цикл
 	task.spawn(function()
 		while true do
 			RAINBOW_HUE = (RAINBOW_HUE + 0.01) % 1
@@ -1219,16 +1205,10 @@ do
 					p.Color = col
 				end
 			end
-			-- Trail — обновляем цвет
-			if TRAIL_RAINBOW then
-				local seq = ColorSequence.new(col, col)
-				for _, t in pairs(RAINBOW_TRAILS) do
-					if t and t.Parent then
-						pcall(function()
-							t.Color = seq
-							t.Color2 = seq
-						end)
-					end
+			local seq = ColorSequence.new(col, col)
+			for _, t in pairs(RAINBOW_TRAILS) do
+				if t and t.Parent then
+					pcall(function() t.Color = seq end)
 				end
 			end
 			task.wait(0.03)
@@ -1238,40 +1218,35 @@ do
 	local function AddRainbow(part, transparency)
 		if not part or not part:IsA("BasePart") then return end
 		if transparency then part.Transparency = transparency end
-		part.Material = Enum.Material.Neon
+		pcall(function() part.Material = Enum.Material.Neon end)
 		table.insert(RAINBOW_PARTS, part)
 	end
 
-	-- ===== Вернуть жуткое лицо =====
-	if RESTORE_FACE then
-		task.spawn(function()
-			task.wait(1.5)
-			if HEAD then
-				for _, c in pairs(HEAD:GetChildren()) do
-					if c:IsA("Decal") then c:Destroy() end
-				end
-				local face = IT("Decal", HEAD)
-				face.Name = "face"
-				face.Face = Enum.NormalId.Front
-				face.Texture = "http://www.roblox.com/asset/?id="..FACE_ID
+	-- Вернуть лицо
+	task.spawn(function()
+		task.wait(1.5)
+		if HEAD then
+			for _, c in pairs(HEAD:GetChildren()) do
+				if c:IsA("Decal") then c:Destroy() end
 			end
-		end)
-	end
+			local face = Instance.new("Decal", HEAD)
+			face.Name = "face"
+			face.Face = Enum.NormalId.Front
+			face.Texture = "http://www.roblox.com/asset/?id=145854465"
+		end
+	end)
 
-	-- ===== Основной цикл addon =====
+	-- Основной цикл
 	task.spawn(function()
 		while true do
-			-- == МЕЧ ==
+			-- МЕЧ
 			if SWORD and SWORD.Parent and not PROCESSED[SWORD] then
 				PROCESSED[SWORD] = true
-				if SWORD_RAINBOW then
-					SWORD.Material = Enum.Material.Neon
-					AddRainbow(SWORD, SWORD_TRANSPARENCY)
-				end
+				AddRainbow(SWORD, 0.5)
 			end
 
-			-- == Trail меча (след при взмахе) ==
-			if TRAIL_RAINBOW and SWORD and SWORD.Parent then
+			-- TRAIL меча
+			if SWORD and SWORD.Parent then
 				for _, d in pairs(SWORD:GetDescendants()) do
 					if d:IsA("Trail") and not PROCESSED[d] then
 						PROCESSED[d] = true
@@ -1284,35 +1259,36 @@ do
 				end
 			end
 
-			-- == БРОНЯ ==
-			if ARMOR and HEAD then
-				-- 1. Находим максимальный объём среди деталей (без меча)
+			-- БРОНЯ
+			if ARMOR and HEAD and not PROCESSED["_armor_scanned"] then
 				local maxVol = 0
+				local parts = {}
 				for _, part in pairs(ARMOR:GetDescendants()) do
 					if part:IsA("BasePart") and part ~= SWORD then
 						local v = part.Size.X * part.Size.Y * part.Size.Z
 						if v > maxVol then maxVol = v end
+						table.insert(parts, part)
 					end
 				end
 
-				-- 2. Обрабатываем
-				for _, part in pairs(ARMOR:GetDescendants()) do
-					if part:IsA("BasePart") and part ~= SWORD and not PROCESSED[part] then
-						PROCESSED[part] = true
+				if maxVol > 0 then
+					PROCESSED["_armor_scanned"] = true
+					for _, part in pairs(parts) do
+						if not PROCESSED[part] then
+							PROCESSED[part] = true
+							local sz = part.Size
+							local vol = sz.X * sz.Y * sz.Z
+							local isSpike = (vol < maxVol * 0.1)
+							local aboveHead = part.Position.Y > (HEAD.Position.Y + 0.6)
 
-						local sz = part.Size
-						local vol = sz.X * sz.Y * sz.Z
-						local isSpike = (maxVol > 0) and (vol < maxVol * SPIKE_RATIO)
-						local aboveHead = part.Position.Y > (HEAD.Position.Y + 0.6)
-
-						if CAP_DARK and aboveHead then
-							part.Material = Enum.Material.Neon
-							part.Color = Color3.fromRGB(35, 35, 35)
-							part.Transparency = 0
-						elseif SPIKES_RAINBOW and isSpike then
-							AddRainbow(part, SPIKES_TRANSPARENCY)
-						elseif BODY_NEON then
-							part.Material = Enum.Material.Neon
+							if aboveHead then
+								pcall(function() part.Material = Enum.Material.Neon end)
+								part.Color = Color3.fromRGB(35, 35, 35)
+							elseif isSpike then
+								AddRainbow(part, 0.3)
+							else
+								pcall(function() part.Material = Enum.Material.Neon end)
+							end
 						end
 					end
 				end
@@ -1401,4 +1377,44 @@ while true do
 					NECK.C0 = Clerp(NECK.C0, NECKC0 * CF(0, 0, 0 + ((1) - 1)) * ANGLES(RAD(5), RAD(0), RAD(0)), 0.25 / ANIM_SPEED)
 					RIGHTSHOULDER.C0 = Clerp(RIGHTSHOULDER.C0, CF(1.5, 0.5, 0) * ANGLES(RAD(0), RAD(0), RAD(0)) * RIGHTSHOULDERC0, 0.75 / ANIM_SPEED)
 					HOLD.C0 = Clerp(HOLD.C0, GRIPC0 * CF(0,0,0) * ANGLES(RAD(0),RAD(0),RAD(90)), 0.5 / ANIM_SPEED)
-					LEFTSHOULDER.C0 =
+					LEFTSHOULDER.C0 = Clerp(LEFTSHOULDER.C0, CF(-1.5, 0.5, 0) * ANGLES(RAD(0), RAD(0), RAD(0)) * LEFTSHOULDERC0, 0.75 / ANIM_SPEED)
+					RIGHTHIP.C0 = Clerp(RIGHTHIP.C0, CF(1 , -1, 0) * ANGLES(RAD(0), RAD(90), RAD(0)) * ANGLES(RAD(0), RAD(0), RAD(0)), 2 / ANIM_SPEED)
+					LEFTHIP.C0 = Clerp(LEFTHIP.C0, CF(-1, -1, 0) * ANGLES(RAD(0), RAD(-90), RAD(0)) * ANGLES(RAD(0), RAD(0), RAD(0)), 2 / ANIM_SPEED)
+				end
+				ROOT.CFrame = CF(HITPOS+VT(0,0.05,0))*ANGLES(0,RAD(ROOT.Orientation.Y),0)
+			end
+		else
+			SUBMERGED = false
+			ANIM = "Midair"
+			if ATTACKING == false then
+				ROOT.Anchored = false
+				ROOTJOINT.C0 = Clerp(ROOTJOINT.C0, ROOTC0 * CF(0, 0, 0) * ANGLES(RAD(-10), RAD(0), RAD(0)), 1 / ANIM_SPEED)
+				NECK.C0 = Clerp(NECK.C0, NECKC0 * CF(0, 0 , 0 + ((1) - 1)) * ANGLES(RAD(20), RAD(0), RAD(0)), 1 / ANIM_SPEED)
+				RIGHTSHOULDER.C0 = Clerp(RIGHTSHOULDER.C0, CF(1.5, 0.5, 0) * ANGLES(RAD(-25), RAD(0), RAD(15)) * RIGHTSHOULDERC0, 1 / ANIM_SPEED)
+				HOLD.C0 = Clerp(HOLD.C0, GRIPC0 * CF(0,0,0) * ANGLES(RAD(0),RAD(0),RAD(0)), 0.5 / ANIM_SPEED)
+				LEFTSHOULDER.C0 = Clerp(LEFTSHOULDER.C0, CF(-1.5, 0.5, 0) * ANGLES(RAD(-25), RAD(0), RAD(-15)) * LEFTSHOULDERC0, 1 / ANIM_SPEED)
+				RIGHTHIP.C0 = Clerp(RIGHTHIP.C0, CF(1, -1, 0) * ANGLES(RAD(0), RAD(90), RAD(0)) * ANGLES(RAD(0), RAD(0), RAD(20)), 1 / ANIM_SPEED)
+				LEFTHIP.C0 = Clerp(LEFTHIP.C0, CF(-1, -1, 0) * ANGLES(RAD(0), RAD(-90), RAD(0)) * ANGLES(RAD(0), RAD(0), RAD(10)), 1 / ANIM_SPEED)
+			end
+		end
+	else
+		SUBMERGED = false
+		ANIM = "Sit"
+		if ATTACKING == false then
+			ROOTJOINT.C0 = Clerp(ROOTJOINT.C0,ROOTC0 * CF(0, 0, -0.5) * ANGLES(RAD(0), RAD(0), RAD(0)), 1.25 / ANIM_SPEED)
+			NECK.C0 = Clerp(NECK.C0, NECKC0 * CF(0, 0, 0 + ((1) - 1)) * ANGLES(RAD(0), RAD(0), RAD(0)), 1.25 / ANIM_SPEED)
+			RIGHTSHOULDER.C0 = Clerp(RIGHTSHOULDER.C0, CF(1.5, 0.65, 0) * ANGLES(RAD(50), RAD(10), RAD(-45))*CF(0,-0.25,0) * RIGHTSHOULDERC0, 1.25 / ANIM_SPEED)
+			LEFTSHOULDER.C0 = Clerp(LEFTSHOULDER.C0, CF(-1.5, 0.65, 0) * ANGLES(RAD(50), RAD(-10), RAD(45))*CF(0,-0.25,0) * LEFTSHOULDERC0, 1.25 / ANIM_SPEED)
+			RIGHTHIP.C0 = Clerp(RIGHTHIP.C0, CF(1, -0.25, -1) * ANGLES(RAD(0), RAD(90), RAD(0)) * ANGLES(RAD(0), RAD(0), RAD(10)), 1.25 / ANIM_SPEED)
+			LEFTHIP.C0 = Clerp(LEFTHIP.C0, CF(-1, -0.25, -1) * ANGLES(RAD(0), RAD(-90), RAD(0)) * ANGLES(RAD(0), RAD(0), RAD(-10)), 1.25 / ANIM_SPEED)
+		end
+	end
+	if TWITCH > 0 then
+		TWITCH = TWITCH - 1
+		NECK.C0 = NECK.C0 * ANGLES(RAD(MRANDOM(-5,5)), RAD(MRANDOM(-5,5)), RAD(MRANDOM(-5,5)))
+	else
+		if MRANDOM(1,25) == 1 then
+			TWITCH = MRANDOM(2,12)
+		end
+	end
+end
