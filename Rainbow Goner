@@ -53,7 +53,7 @@ Mouse,mouse,UserInputService,ToolFunction,GuiWire,RenderStepped,Player=game.Play
 
 local ANIM_SPEED = 3
 local MOUSE = PLAYER:GetMouse()
-local FRAME_SPEED = 1 / 60 -- (1 / 30) OR (1 / 60)
+local FRAME_SPEED = 1 / 60
 local CHANGE = 2 / ANIM_SPEED
 local DAMAGEMULTIPLIER = 1
 local ANIM = "Idle"
@@ -76,15 +76,11 @@ local LEFTSHOULDERC0 = CF(0.5, 0, 0) * ANGLES(RAD(0), RAD(-90), RAD(0))
 local PLR = game:GetService("Players").LocalPlayer
 local CHAR = PLR.Character
 local HUM = CHAR:FindFirstChildOfClass("Humanoid")
---script.Parent.Animate:Remove()
 for _,v in next, HUM:GetPlayingAnimationTracks() do
 	v:Stop();
 end
 local EVENT = REMOTE
 local MOUSE = PLR:GetMouse()
---[[game:service'RunService'.RenderStepped:connect(function()
-	EVENT:FireServer("MousePositionUpdate",MOUSE.Hit.p)
-end)]]
 MOUSE.KeyDown:Connect(function(KEY)
 	EVENT:FireServer("KeyDown",KEY)
 end)
@@ -147,15 +143,13 @@ function Swait(NUMBER)
 	end
 end
 
--- ===== ИСПРАВЛЕННАЯ ФУНКЦИЯ attackuno (мгновенная смерть с классическим эффектом) =====
+-- ===== ИСПРАВЛЕННАЯ ФУНКЦИЯ attackuno =====
 function attackuno(target)
     local hum = target:FindFirstChildOfClass("Humanoid")
     if hum and hum.Health > 0 and target ~= CHARACTER then
         hum.Health = 0
-        -- Разрываем все соединения и включаем падение
         target:BreakJoints()
         hum.PlatformStand = true
-        -- Дополнительно можно добавить эффект разлета частей (уже есть в других функциях)
     end
 end
 -- =================================================================================
@@ -253,7 +247,6 @@ function WeldParts(A,B)
 	WLD.Parent = A
 	return WLD
 end
---NewSound({ID = 0,PARENT = ROOT,VOLUME = 0.5,PITCH = 1,LOOP = false,MAXDISTANCE = 1000,EMITTERSIZE = 10,PLAYING = true,PLAYONREMOVE = false,DOESDEBRIS = true})
 function NewSound(TABLE)
 local ID
     if typeof(TABLE.ID) == "number" then
@@ -359,7 +352,6 @@ function CameraShake(AREA,RANGE,SHAKE,TIMER)
 		end
 	end
 end
---Debree({Delay = 1.5,Variant = "",Location = ROOT.Position,Color = C3(1,1,1),Size = 1,Distance = 1,Material = "Slate",Scatter = 1,Amount = 1,DebreeCount = 1})
 function Debree(Table)
 	local KindOf = (Table.Variant or "Ring")
 	local Position = (Table.Location or ROOT.Position)
@@ -614,7 +606,7 @@ end)
 for _, btn in pairs(GUI.ToggleButton.Controls:GetChildren()) do
     if btn:IsA("TextButton") then
         btn.MouseButton1Click:Connect(function()
-            local key = btn.Name  -- Название кнопки должно соответствовать клавише (Z, X, C, V, G, Q, T, Y, U, E и т.д.)
+            local key = btn.Name
             if key and key ~= "" then
                 REMOTE:FireServer("KeyDown", key)
             end
@@ -689,7 +681,6 @@ function Slash()
 		HOLD.C0 = Clerp(HOLD.C0, GRIPC0 * CF(0,0,0) * ANGLES(RAD(0),RAD(0),RAD(85)), 0.75 / ANIM_SPEED)
 		LEFTSHOULDER.C0 = Clerp(LEFTSHOULDER.C0, CF(-1.5, 0.5, -0.3) * ANGLES(RAD(-5), RAD(-10), RAD(20)) * LEFTSHOULDERC0, 1.5 / ANIM_SPEED)
 		RIGHTHIP.C0 = Clerp(RIGHTHIP.C0, CF(1, -1, 0) * ANGLES(RAD(0), RAD(100), RAD(0)) * ANGLES(RAD(-1), RAD(0), RAD(0)), 1.5 / ANIM_SPEED)
-		-- ИСПРАВЛЕНА ОШИБКА (лишний аргумент) :
 		LEFTHIP.C0 = Clerp(LEFTHIP.C0, CF(-1, -1, 0) * ANGLES(RAD(0), RAD(-60), RAD(0)) * ANGLES(RAD(-3), RAD(0), RAD(0)), 1.5 / ANIM_SPEED)
 	end
 	TRAIL.Enabled = false
@@ -1131,8 +1122,6 @@ end
 REMOTE.OnServerEvent:Connect(function(PLR,V1,V2)
 local PLR = PLAYER
 	if PLR == PLAYER and ANIM ~= "Sit" then
-		--if V1 == "MousePositionUpdate" then
-			--MOUSEPOS = V2
 		if V1 == "KeyUp" then
 			KEYHOLD = false
 		elseif V1 == "MouseUp" then
@@ -1213,12 +1202,29 @@ HUM.Name = PLAYER.UserId
 script.Parent = PLAYER.Backpack
 
 --//====================================================\\--
---||         RAINBOW EFFECTS ADDON (безопасный)         ||
+--||     RAINBOW ADDON (следит за новыми деталями)      ||
 --\\====================================================//--
 do
 	local RAINBOW_PARTS = {}
 	local RAINBOW_HUE = 0
+	local PROCESSED = {}          -- уже обработанные детали
+	local GRAY_CAP_PARTS = {}     -- серые детали (кепка), не перекрашиваем
 
+	-- Радужный цветовой цикл
+	task.spawn(function()
+		while true do
+			RAINBOW_HUE = (RAINBOW_HUE + 0.01) % 1
+			local col = Color3.fromHSV(RAINBOW_HUE, 0.85, 1)
+			for _, p in pairs(RAINBOW_PARTS) do
+				if p and p.Parent then
+					p.Color = col
+				end
+			end
+			task.wait(0.03)
+		end
+	end)
+
+	-- Применить радугу к детали
 	local function AddRainbow(part, transparency)
 		if not part or not part:IsA("BasePart") then return end
 		if transparency then part.Transparency = transparency end
@@ -1226,51 +1232,48 @@ do
 		table.insert(RAINBOW_PARTS, part)
 	end
 
-	-- Радужный цикл (не блокирует основной поток)
+	-- Следим за ARMOR и SWORD постоянно — детали грузятся асинхронно
 	task.spawn(function()
 		while true do
-			RAINBOW_HUE = (RAINBOW_HUE + 0.01) % 1
-			for _, p in pairs(RAINBOW_PARTS) do
-				if p and p.Parent then
-					p.Color = Color3.fromHSV(RAINBOW_HUE, 0.85, 1)
-				end
+			-- == МЕЧ ==
+			if SWORD and SWORD.Parent and not PROCESSED[SWORD] then
+				PROCESSED[SWORD] = true
+				SWORD.Transparency = 0.35
+				SWORD.Material = Enum.Material.Neon
+				AddRainbow(SWORD, 0.35)
 			end
-			task.wait(0.03)
-		end
-	end)
 
-	-- Ждём пока броня и меч создадутся, потом применяем эффекты
-	task.spawn(function()
-		task.wait(2)
+			-- == БРОНЯ ==
+			if ARMOR and HEAD then
+				for _, part in pairs(ARMOR:GetDescendants()) do
+					if part:IsA("BasePart") and not PROCESSED[part] then
+						PROCESSED[part] = true
 
-		-- ===== МЕЧ: прозрачный + радуга =====
-		if SWORD then
-			SWORD.Transparency = 0.35
-			SWORD.Material = Enum.Material.Neon
-			AddRainbow(SWORD, 0.35)
-		end
+						local c = part.Color
+						local isBlack = (c.R < 0.25 and c.G < 0.25 and c.B < 0.25)
+						local isRed   = (c.R > 0.5 and c.G < 0.5 and c.B < 0.5)
 
-		-- ===== БРОНЯ: чёрные шипы → радуга, кепка сверху → серая, красная улыбка → радуга =====
-		if ARMOR and HEAD then
-			for _, part in pairs(ARMOR:GetDescendants()) do
-				if part:IsA("BasePart") and part ~= SWORD then
-					local c = part.Color
-					local isBlack = (c.R < 0.2 and c.G < 0.2 and c.B < 0.2)
-					local isRed   = (c.R > 0.5 and c.G < 0.4 and c.B < 0.4)
-					-- Кепка = тёмная деталь, что выше головы
-					local aboveHead = (part.Position.Y > HEAD.Position.Y + 0.7)
+						-- Кепка = тёмная деталь, лежащая над головой
+						local aboveHead = false
+						if HEAD and HEAD.Parent then
+							aboveHead = part.Position.Y > (HEAD.Position.Y + 0.6)
+						end
 
-					if isBlack and aboveHead then
-						-- Серая "незатекстуренная" кепка
-						part.Color = Color3.fromRGB(120, 120, 120)
-						part.Material = Enum.Material.SmoothPlastic
-						part.Reflectance = 0
-					elseif isBlack or isRed then
-						-- Чёрные шипы + красная улыбка → радуга
-						AddRainbow(part)
+						if isBlack and aboveHead then
+							-- Серая "незатекстуренная" кепка
+							part.Color = Color3.fromRGB(120, 120, 120)
+							part.Material = Enum.Material.SmoothPlastic
+							part.Reflectance = 0
+							GRAY_CAP_PARTS[part] = true
+						elseif (isBlack or isRed) and part ~= SWORD then
+							-- Шипы + красная улыбка → радуга
+							AddRainbow(part)
+						end
 					end
 				end
 			end
+
+			task.wait(0.5)  -- проверять каждые 0.5 сек
 		end
 	end)
 end
