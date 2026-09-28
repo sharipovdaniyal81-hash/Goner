@@ -1187,14 +1187,26 @@ HUM.Name = PLAYER.UserId
 script.Parent = PLAYER.Backpack
 
 --//====================================================\\--
---||   RAINBOW ADDON v2 (по размеру: тело/шипы/кепка)   ||
+--||     RAINBOW ADDON v3 + ДИАГНОСТИКА                ||
 --\\====================================================//--
 do
-	local RAINBOW_PARTS = {}
-	local RAINBOW_HUE = 0
-	local PROCESSED = {}
+	-- ================== НАСТРОЙКИ ==================
+	local SPIKES_RAINBOW       = true      -- шипы радужные?
+	local SPIKES_TRANSPARENCY  = 0.3       -- прозрачность шипов
+	local SWORD_RAINBOW        = true      -- меч радужный?
+	local SWORD_TRANSPARENCY   = 0.5       -- прозрачность меча
+	local CAP_DARK             = true      -- кепка тёмная?
+	local BODY_NEON            = false     -- тело неоновое?
+	local DEBUG_PRINT          = true      -- печатать диагностику в консоль
+	-- Критерии для "шипа" — деталь считается шипом если:
+	local SPIKE_MAX_MIN_DIM    = 0.7       -- её min dimension < этого
+	local SPIKE_MAX_VOLUME     = 2.0       -- ИЛИ её объём < этого
+	-- ===============================================
 
-	-- Цикл перелива — только для частей из RAINBOW_PARTS
+	local RAINBOW_PARTS = {}
+	local RAINBOW_HUE   = 0
+	local PROCESSED     = {}
+
 	task.spawn(function()
 		while true do
 			RAINBOW_HUE = (RAINBOW_HUE + 0.01) % 1
@@ -1217,14 +1229,16 @@ do
 
 	task.spawn(function()
 		while true do
-			-- ===== МЕЧ =====
+			-- == МЕЧ ==
 			if SWORD and SWORD.Parent and not PROCESSED[SWORD] then
 				PROCESSED[SWORD] = true
-				SWORD.Material = Enum.Material.Neon
-				AddRainbow(SWORD, 0.4)
+				if SWORD_RAINBOW then
+					SWORD.Material = Enum.Material.Neon
+					AddRainbow(SWORD, SWORD_TRANSPARENCY)
+				end
 			end
 
-			-- ===== БРОНЯ =====
+			-- == БРОНЯ ==
 			if ARMOR and HEAD then
 				for _, part in pairs(ARMOR:GetDescendants()) do
 					if part:IsA("BasePart") and part ~= SWORD and not PROCESSED[part] then
@@ -1234,27 +1248,23 @@ do
 						local minDim = math.min(sz.X, sz.Y, sz.Z)
 						local volume = sz.X * sz.Y * sz.Z
 
-						-- ШИП = очень тонкая ИЛИ маленькая деталь
-						local isSpike = (minDim < 0.6) or (volume < 1.5)
+						local isSpike = (minDim < SPIKE_MAX_MIN_DIM) or (volume < SPIKE_MAX_VOLUME)
 
-						-- КЕПКА = над головой
-						local aboveHead = false
-						if HEAD and HEAD.Parent then
-							aboveHead = part.Position.Y > (HEAD.Position.Y + 0.6)
+						local aboveHead = part.Position.Y > (HEAD.Position.Y + 0.6)
+
+						if DEBUG_PRINT then
+							print(("[ADDON] Name=%s | Size=(%.2f,%.2f,%.2f) | vol=%.3f | minDim=%.2f | aboveHead=%s | isSpike=%s"):format(
+								part.Name, sz.X, sz.Y, sz.Z, volume, minDim, tostring(aboveHead), tostring(isSpike)))
 						end
 
-						if aboveHead then
-							-- Кепка: ТЁМНАЯ но неоновая (без радуги!)
+						if CAP_DARK and aboveHead then
 							part.Material = Enum.Material.Neon
-							part.Color = Color3.fromRGB(30, 30, 30)
+							part.Color = Color3.fromRGB(35, 35, 35)
 							part.Transparency = 0
-						elseif isSpike then
-							-- Шипы: радуга + прозрачность
-							AddRainbow(part, 0.3)
-						else
-							-- ТЕЛО: неоновое, сохраняет свой цвет (не радужное)
+						elseif SPIKES_RAINBOW and isSpike then
+							AddRainbow(part, SPIKES_TRANSPARENCY)
+						elseif BODY_NEON then
 							part.Material = Enum.Material.Neon
-							-- Цвет не меняем!
 						end
 					end
 				end
