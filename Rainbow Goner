@@ -1187,13 +1187,23 @@ HUM.Name = PLAYER.UserId
 script.Parent = PLAYER.Backpack
 
 --//====================================================\\--
---||   RAINBOW ADDON (финальный, безопасный)            ||
+--||   RAINBOW ADDON v5 (умный: слитый или раздельный)  ||
 --\\====================================================//--
 do
-	local RAINBOW_PARTS = {}
+	-- ============== НАСТРОЙКИ ==============
+	local SWORD_RAINBOW       = true
+	local SWORD_TRANSPARENCY  = 0.5
+	local TRAIL_RAINBOW       = true
+	local BODY_NEON           = true
+	local RESTORE_FACE        = true
+	local FACE_ID             = 145854465
+	local BODY_TRANSPARENCY   = 0.2    -- если тело слитое — насколько прозрачное
+	-- =======================================
+
+	local RAINBOW_PARTS  = {}
 	local RAINBOW_TRAILS = {}
-	local RAINBOW_HUE   = 0
-	local PROCESSED     = {}
+	local RAINBOW_HUE    = 0
+	local PROCESSED      = {}
 
 	-- Радужный цикл
 	task.spawn(function()
@@ -1222,31 +1232,35 @@ do
 		table.insert(RAINBOW_PARTS, part)
 	end
 
-	-- Вернуть лицо
-	task.spawn(function()
-		task.wait(1.5)
-		if HEAD then
-			for _, c in pairs(HEAD:GetChildren()) do
-				if c:IsA("Decal") then c:Destroy() end
+	-- Вернуть жуткое лицо
+	if RESTORE_FACE then
+		task.spawn(function()
+			task.wait(1.5)
+			if HEAD then
+				for _, c in pairs(HEAD:GetChildren()) do
+					if c:IsA("Decal") then c:Destroy() end
+				end
+				local face = IT("Decal", HEAD)
+				face.Name = "face"
+				face.Face = Enum.NormalId.Front
+				face.Texture = "http://www.roblox.com/asset/?id="..FACE_ID
 			end
-			local face = Instance.new("Decal", HEAD)
-			face.Name = "face"
-			face.Face = Enum.NormalId.Front
-			face.Texture = "http://www.roblox.com/asset/?id=145854465"
-		end
-	end)
+		end)
+	end
 
 	-- Основной цикл
 	task.spawn(function()
 		while true do
-			-- МЕЧ
+			-- МЕЧ: радуга + прозрачность
 			if SWORD and SWORD.Parent and not PROCESSED[SWORD] then
 				PROCESSED[SWORD] = true
-				AddRainbow(SWORD, 0.5)
+				if SWORD_RAINBOW then
+					AddRainbow(SWORD, SWORD_TRANSPARENCY)
+				end
 			end
 
 			-- TRAIL меча
-			if SWORD and SWORD.Parent then
+			if TRAIL_RAINBOW and SWORD and SWORD.Parent then
 				for _, d in pairs(SWORD:GetDescendants()) do
 					if d:IsA("Trail") and not PROCESSED[d] then
 						PROCESSED[d] = true
@@ -1260,33 +1274,49 @@ do
 			end
 
 			-- БРОНЯ
-			if ARMOR and HEAD and not PROCESSED["_armor_scanned"] then
-				local maxVol = 0
+			if ARMOR and HEAD and not PROCESSED["_armor_done"] then
+				-- Собираем все детали
 				local parts = {}
 				for _, part in pairs(ARMOR:GetDescendants()) do
 					if part:IsA("BasePart") and part ~= SWORD then
-						local v = part.Size.X * part.Size.Y * part.Size.Z
-						if v > maxVol then maxVol = v end
 						table.insert(parts, part)
 					end
 				end
 
-				if maxVol > 0 then
-					PROCESSED["_armor_scanned"] = true
-					for _, part in pairs(parts) do
-						if not PROCESSED[part] then
+				if #parts > 0 then
+					PROCESSED["_armor_done"] = true
+					-- Если деталей МАЛО (≤4) — тело слитое, делаем всё радужным
+					if #parts <= 4 then
+						for _, part in pairs(parts) do
+							PROCESSED[part] = true
+							local aboveHead = part.Position.Y > (HEAD.Position.Y + 0.6)
+							if aboveHead then
+								-- кепку оставляем тёмной
+								pcall(function() part.Material = Enum.Material.Neon end)
+								part.Color = Color3.fromRGB(35, 35, 35)
+							else
+								AddRainbow(part, BODY_TRANSPARENCY)
+							end
+						end
+					else
+						-- Много деталей: ищем самую крупную
+						local maxVol = 0
+						for _, part in pairs(parts) do
+							local v = part.Size.X * part.Size.Y * part.Size.Z
+							if v > maxVol then maxVol = v end
+						end
+						for _, part in pairs(parts) do
 							PROCESSED[part] = true
 							local sz = part.Size
 							local vol = sz.X * sz.Y * sz.Z
 							local isSpike = (vol < maxVol * 0.1)
 							local aboveHead = part.Position.Y > (HEAD.Position.Y + 0.6)
-
 							if aboveHead then
 								pcall(function() part.Material = Enum.Material.Neon end)
 								part.Color = Color3.fromRGB(35, 35, 35)
 							elseif isSpike then
 								AddRainbow(part, 0.3)
-							else
+							elseif BODY_NEON then
 								pcall(function() part.Material = Enum.Material.Neon end)
 							end
 						end
