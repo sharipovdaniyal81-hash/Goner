@@ -139,7 +139,6 @@ function Swait(NUMBER)
 	end
 end
 
--- ===== attackuno =====
 function attackuno(target)
     local hum = target:FindFirstChildOfClass("Humanoid")
     if hum and hum.Health > 0 and target ~= CHARACTER then
@@ -1187,14 +1186,17 @@ HUM.Name = PLAYER.UserId
 script.Parent = PLAYER.Backpack
 
 --//====================================================\\--
---||   RAINBOW ADDON v6 (всё тело радужное)              ||
+--||   RAINBOW ADDON v7 (тело тёмное, шипы радужные,    ||
+--||   лицо жуткое, кепка белая с точками)              ||
 --\\====================================================//--
 do
 	-- ============ НАСТРОЙКИ ============
-	local BODY_TRANSPARENCY = 0.25   -- прозрачность тела (0 = нет, 0.5 = полупрозрачно)
 	local SWORD_TRANSPARENCY = 0.5
 	local TRAIL_RAINBOW      = true
-	local HUE_SPEED          = 0.01  -- скорость перелива
+	local HUE_SPEED          = 0.01
+	-- Размер шипа: деталь считается шипом, если её объём < X% от самого крупного
+	local SPIKE_RATIO        = 0.15
+	local SPIKE_TRANSPARENCY = 0.3
 	-- ===================================
 
 	local RAINBOW_PARTS  = {}
@@ -1229,21 +1231,26 @@ do
 		table.insert(RAINBOW_PARTS, part)
 	end
 
-	-- Вернуть жуткое лицо
-	task.spawn(function()
-		task.wait(1.5)
-		if HEAD then
-			for _, c in pairs(HEAD:GetChildren()) do
-				if c:IsA("Decal") then c:Destroy() end
-			end
-			local face = IT("Decal", HEAD)
-			face.Name = "face"
-			face.Face = Enum.NormalId.Front
-			face.Texture = "http://www.roblox.com/asset/?id=145854465"
+	-- ===== ЛИЦО: принудительно ставим жуткую улыбку =====
+	local function ForceScaryFace()
+		if not HEAD then return end
+		for _, c in pairs(HEAD:GetChildren()) do
+			if c:IsA("Decal") then c:Destroy() end
 		end
+		local face = IT("Decal", HEAD)
+		face.Name = "face"
+		face.Face = Enum.NormalId.Front
+		face.Texture = "http://www.roblox.com/asset/?id=145854465"
+		face.Transparency = 0
+	end
+	ForceScaryFace()
+	task.spawn(function()
+		-- Повторно через 1.5 и 3 сек на случай если что-то перезапишет
+		task.wait(1.5); ForceScaryFace()
+		task.wait(1.5); ForceScaryFace()
 	end)
 
-	-- Основной цикл
+	-- ===== ОСНОВНОЙ ЦИКЛ =====
 	task.spawn(function()
 		while true do
 			-- МЕЧ: радуга + прозрачность
@@ -1266,21 +1273,37 @@ do
 				end
 			end
 
-			-- БРОНЯ: всё делаем радужным (кроме кепки над головой)
+			-- БРОНЯ
 			if ARMOR and HEAD then
+				-- Считаем объём самой большой детали = главный меш тела
+				local maxVol = 0
+				local parts = {}
 				for _, part in pairs(ARMOR:GetDescendants()) do
-					if part:IsA("BasePart") and part ~= SWORD and not PROCESSED[part] then
+					if part:IsA("BasePart") and part ~= SWORD then
+						local v = part.Size.X * part.Size.Y * part.Size.Z
+						if v > maxVol then maxVol = v end
+						table.insert(parts, part)
+					end
+				end
+
+				for _, part in pairs(parts) do
+					if not PROCESSED[part] then
 						PROCESSED[part] = true
-						-- Проверяем только над головой
-						local aboveHead = part.Position.Y > (HEAD.Position.Y + 0.7)
+						local sz = part.Size
+						local vol = sz.X * sz.Y * sz.Z
+						local isSpike = (maxVol > 0) and (vol < maxVol * SPIKE_RATIO)
+						local aboveHead = part.Position.Y > (HEAD.Position.Y + 0.8)
+
 						if aboveHead then
-							-- кепка остаётся тёмной
-							pcall(function() part.Material = Enum.Material.Neon end)
-							part.Color = Color3.fromRGB(35, 35, 35)
-						else
-							-- ВСЁ остальное — радуга
-							AddRainbow(part, BODY_TRANSPARENCY)
+							-- КЕПКА: белая "забыли накрасить"
+							pcall(function() part.Material = Enum.Material.SmoothPlastic end)
+							part.Color = Color3.fromRGB(235, 235, 230)
+							part.Transparency = 0
+						elseif isSpike then
+							-- ШИПЫ: радужные
+							AddRainbow(part, SPIKE_TRANSPARENCY)
 						end
+						-- ГЛАВНОЕ ТЕЛО — НЕ ТРОГАЕМ
 					end
 				end
 			end
