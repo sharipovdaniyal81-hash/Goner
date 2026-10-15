@@ -540,12 +540,23 @@ end
 
 local ARMOR = IT("Model",CHARACTER)
 ARMOR.Name = "Goner"
+
+-- === КЛАССИЧЕСКОЕ ЛИЦО 2006 (БЛЕДНО-КРАСНОЕ) ===
 HEAD:ClearAllChildren()
-HEAD.Size = VT(1,1,1)
+HEAD.Size = VT(1, 1, 1)
+HEAD.Transparency = 0
+HEAD.Color = Color3.fromRGB(255, 160, 160)
+HEAD.Material = Enum.Material.SmoothPlastic
+
+local classicFaceDecal = IT("Decal")
+classicFaceDecal.Name = "ClassicFace"
+classicFaceDecal.Face = Enum.NormalId.Front
+classicFaceDecal.Texture = "rbxasset://textures/face.png"
+classicFaceDecal.Parent = HEAD
+-- =============================================
+
 NECK.Parent = TORSO
 local PARTS = {}
-local TORSO_PARTS = {}
-local HEAD_PARTS = {}
 for index, CHILD in pairs(CHARACTER:GetChildren()) do
 	if CHILD:IsA("BasePart") then
 		CHILD.Transparency = 1
@@ -564,12 +575,6 @@ for index, CHILD in pairs(CHARACTER:GetChildren()) do
 					WeldParts(CHILD,PART)
 					PART.Parent = ARMOR
 					table.insert(PARTS,PART)
-					if CHILD.Name == "Torso" then
-						table.insert(TORSO_PARTS, PART)
-					end
-					if CHILD.Name == "Head" then
-						table.insert(HEAD_PARTS, PART)
-					end
 				end
 			end
 			P:Destroy()
@@ -586,141 +591,91 @@ for _, c in pairs(CHARACTER:GetDescendants()) do
 	end
 end
 
--- ============================================================
--- ===       МИЛОЕ РОЗОВО-КРАСНОЕ ЛИЦО С КЛАССИЧЕСКОЙ УЛЫБКОЙ  ===
--- ============================================================
-
-local PINK_COLOR = Color3.fromRGB(255, 130, 165)
-local maxSize = 0
-local mainHeadPart = nil
-for _, part in pairs(HEAD_PARTS) do
-	if part and part:IsA("BasePart") then
-		part.Color = PINK_COLOR
-		part.Material = Enum.Material.Neon
-		part.Reflectance = 0.15
-		for _, child in pairs(part:GetChildren()) do
-			if child:IsA("Decal") or child:IsA("Texture") then
-				child:Destroy()
-			end
-		end
-		local size = part.Size.X * part.Size.Y * part.Size.Z
-		if size > maxSize then
-			maxSize = size
-			mainHeadPart = part
-		end
-	end
-end
-
-if mainHeadPart then
-	local faceDecal = Instance.new("Decal")
-	faceDecal.Name = "CuteFace"
-	faceDecal.Face = Enum.NormalId.Front
-	faceDecal.Texture = "rbxasset://textures/face.png"
-	faceDecal.Parent = mainHeadPart
-end
--- ============================================================
-
 local SWORD = MODULE.Sword
 SWORD.Parent = ARMOR
 SWORD.Anchored = false
+
+-- === МЕЧ В ЛЕВОЙ РУКЕ ===
 local GRIPC0 = CF(0,-0.9,0)*ANGLES(RAD(90),RAD(90),0)
 local HOLD = IT("ManualWeld")
-HOLD.Part0 = RIGHTARM
+HOLD.Part0 = LEFTARM
 HOLD.Part1 = SWORD
 HOLD.C0 = GRIPC0
 HOLD.C1 = CF(0,-SWORD.Size.Y/3,0)
-HOLD.Parent = RIGHTARM
+HOLD.Parent = LEFTARM
 HOLD.Name = "GripWeld"
+-- =======================
+
 local TRAIL = SWORD.Trail
 local SOUND_SNAP = 150315649
 local SUBMERGED = false
 table.insert(PARTS,SWORD)
 
--- ============================================================
--- ===        ЗАМЕНА МЕЧА НА ОРУЖИЕ ИЗ HACKLORD MODEL        ===
--- ============================================================
-
--- Скрываем оригинальный меч
+-- === ЗЕЛЁНЫЙ МЕЧ (заменяем гроб на классический зелёный меч) ===
 SWORD.Transparency = 1
 for _, child in pairs(SWORD:GetChildren()) do
-	if child:IsA("BasePart") or child:IsA("Mesh") or child:IsA("SpecialMesh") then
-		if child:IsA("BasePart") then
-			child.Transparency = 1
-		else
-			child:Destroy()
-		end
-	end
+    if child:IsA("BasePart") then
+        child.Transparency = 1
+    elseif child:IsA("SpecialMesh") or child:IsA("Mesh") then
+        child:Destroy()
+    end
 end
 
-local hackLoaded, hackModel = pcall(function()
-	return game:GetObjects("rbxassetid://102473641596712")[1]
-end)
+local greenSword = IT("Part")
+greenSword.Name = "GreenSword"
+greenSword.Size = VT(0.6, 5, 0.6)
+greenSword.Anchored = false
+greenSword.CanCollide = false
+greenSword.Massless = true
+greenSword.Color = Color3.fromRGB(60, 200, 60)
+greenSword.Material = Enum.Material.Metal
+greenSword.TopSurface = Enum.SurfaceType.Smooth
+greenSword.BottomSurface = Enum.SurfaceType.Smooth
+greenSword.Parent = ARMOR
 
-if hackLoaded and hackModel then
-	local hackLord = hackModel:FindFirstChild("HackLord") or hackModel
-	if hackLord then
-		-- Собираем источник оружия: Coffin -> ExtraModels -> сам HackLord
-		local weaponSource = hackLord:FindFirstChild("Coffin")
-			or hackLord:FindFirstChild("ExtraModels")
-			or hackLord:FindFirstChild("ErlkingCoffinChains")
-			or hackLord
+local swordMesh = IT("SpecialMesh")
+swordMesh.MeshType = Enum.MeshType.FileMesh
+swordMesh.MeshId = "http://www.roblox.com/asset/?id=94840342"
+swordMesh.Scale = VT(1, 1, 1)
+swordMesh.Parent = greenSword
 
-		local referencePart = nil
-		for _, p in ipairs(hackLord:GetDescendants()) do
-			if p:IsA("BasePart") then
-				referencePart = p
-				break
-			end
-		end
+local swordWeld = IT("ManualWeld")
+swordWeld.Part0 = SWORD
+swordWeld.Part1 = greenSword
+swordWeld.C0 = CF(0, 0, 0)
+swordWeld.C1 = CF(0, 0, 0)
+swordWeld.Parent = SWORD
 
-		if weaponSource and referencePart then
-			local rootCF = referencePart.CFrame
+table.insert(PARTS, greenSword)
+-- ===============================================================
 
-			-- Если оружие это Model - перебираем части
-			if weaponSource:IsA("Model") then
-				for _, part in ipairs(weaponSource:GetDescendants()) do
-					if part:IsA("BasePart") then
-						local clone = part:Clone()
-						clone.Anchored = false
-						clone.CanCollide = false
-						clone.Massless = true
-
-						-- Сохраняем относительную позицию относительно referencePart
-						local relCF = rootCF:Inverse() * part.CFrame
-
-						-- Велдим к SWORD
-						local weld = Instance.new("Weld")
-						weld.Part0 = SWORD
-						weld.Part1 = clone
-						weld.C0 = relCF
-						weld.C1 = CFrame.new()
-						weld.Parent = clone
-
-						clone.Parent = ARMOR
-						table.insert(PARTS, clone)
-					end
-				end
-			elseif weaponSource:IsA("BasePart") then
-				local clone = weaponSource:Clone()
-				clone.Anchored = false
-				clone.CanCollide = false
-				clone.Massless = true
-
-				local weld = Instance.new("Weld")
-				weld.Part0 = SWORD
-				weld.Part1 = clone
-				weld.C0 = CFrame.new()
-				weld.C1 = CFrame.new()
-				weld.Parent = clone
-
-				clone.Parent = ARMOR
-				table.insert(PARTS, clone)
-			end
-		end
-	end
-	hackModel:Destroy()
+-- === КЛАССИЧЕСКИЕ R6 АНИМАЦИИ (как в Doomspire) ===
+local ANIM_IDS = {
+    Idle = "rbxassetid://125750544",
+    Walk = "rbxassetid://125749145",
+    Run  = "rbxassetid://125749145",
+    Jump = "rbxassetid://125750702",
+    Fall = "rbxassetid://125750702",
+}
+local animateScript = CHARACTER:FindFirstChild("Animate")
+if animateScript then
+    if animateScript:FindFirstChild("idle") and animateScript.idle:FindFirstChild("IdleAnim") then
+        animateScript.idle.IdleAnim.AnimationId = ANIM_IDS.Idle
+    end
+    if animateScript:FindFirstChild("walk") and animateScript.walk:FindFirstChild("WalkAnim") then
+        animateScript.walk.WalkAnim.AnimationId = ANIM_IDS.Walk
+    end
+    if animateScript:FindFirstChild("run") and animateScript.run:FindFirstChild("RunAnim") then
+        animateScript.run.RunAnim.AnimationId = ANIM_IDS.Run
+    end
+    if animateScript:FindFirstChild("jump") and animateScript.jump:FindFirstChild("JumpAnim") then
+        animateScript.jump.JumpAnim.AnimationId = ANIM_IDS.Jump
+    end
+    if animateScript:FindFirstChild("fall") and animateScript.fall:FindFirstChild("FallAnim") then
+        animateScript.fall.FallAnim.AnimationId = ANIM_IDS.Fall
+    end
 end
--- ============================================================
+-- ==================================================
 
 local GUI = MODULE.ControlsGUI
 GUI.Parent = PLAYER.PlayerGui
