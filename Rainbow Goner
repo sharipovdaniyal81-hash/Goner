@@ -545,6 +545,7 @@ HEAD.Size = VT(1,1,1)
 NECK.Parent = TORSO
 local PARTS = {}
 local TORSO_PARTS = {}
+local HEAD_PARTS = {}
 for index, CHILD in pairs(CHARACTER:GetChildren()) do
 	if CHILD:IsA("BasePart") then
 		CHILD.Transparency = 1
@@ -566,6 +567,9 @@ for index, CHILD in pairs(CHARACTER:GetChildren()) do
 					if CHILD.Name == "Torso" then
 						table.insert(TORSO_PARTS, PART)
 					end
+					if CHILD.Name == "Head" then
+						table.insert(HEAD_PARTS, PART)
+					end
 				end
 			end
 			P:Destroy()
@@ -581,6 +585,41 @@ for _, c in pairs(CHARACTER:GetDescendants()) do
 		c.Locked = true
 	end
 end
+
+-- ============================================================
+-- ===       МИЛОЕ РОЗОВО-КРАСНОЕ ЛИЦО С КЛАССИЧЕСКОЙ УЛЫБКОЙ  ===
+-- ============================================================
+
+local PINK_COLOR = Color3.fromRGB(255, 130, 165)
+local maxSize = 0
+local mainHeadPart = nil
+for _, part in pairs(HEAD_PARTS) do
+	if part and part:IsA("BasePart") then
+		part.Color = PINK_COLOR
+		part.Material = Enum.Material.Neon
+		part.Reflectance = 0.15
+		for _, child in pairs(part:GetChildren()) do
+			if child:IsA("Decal") or child:IsA("Texture") then
+				child:Destroy()
+			end
+		end
+		local size = part.Size.X * part.Size.Y * part.Size.Z
+		if size > maxSize then
+			maxSize = size
+			mainHeadPart = part
+		end
+	end
+end
+
+if mainHeadPart then
+	local faceDecal = Instance.new("Decal")
+	faceDecal.Name = "CuteFace"
+	faceDecal.Face = Enum.NormalId.Front
+	faceDecal.Texture = "rbxasset://textures/face.png"
+	faceDecal.Parent = mainHeadPart
+end
+-- ============================================================
+
 local SWORD = MODULE.Sword
 SWORD.Parent = ARMOR
 SWORD.Anchored = false
@@ -598,27 +637,89 @@ local SUBMERGED = false
 table.insert(PARTS,SWORD)
 
 -- ============================================================
--- ===        РАДУЖНЫЙ ЭФФЕКТ + ПРОЗРАЧНЫЙ ТОРС           ===
+-- ===        ЗАМЕНА МЕЧА НА ОРУЖИЕ ИЗ HACKLORD MODEL        ===
 -- ============================================================
 
-for _, part in pairs(TORSO_PARTS) do
-	if part and part:IsA("BasePart") then
-		part.Transparency = 0.5
+-- Скрываем оригинальный меч
+SWORD.Transparency = 1
+for _, child in pairs(SWORD:GetChildren()) do
+	if child:IsA("BasePart") or child:IsA("Mesh") or child:IsA("SpecialMesh") then
+		if child:IsA("BasePart") then
+			child.Transparency = 1
+		else
+			child:Destroy()
+		end
 	end
 end
 
-local RAINBOW_HUE = 0
-game:GetService("RunService").Heartbeat:Connect(function(dt)
-	RAINBOW_HUE = (RAINBOW_HUE + dt * 0.35) % 1
-	for i, part in ipairs(PARTS) do
-		if part and part.Parent and part:IsA("BasePart") then
-			part.Color = Color3.fromHSV((RAINBOW_HUE + i * 0.03) % 1, 1, 1)
-			if part.Material ~= Enum.Material.Neon then
-				part.Material = Enum.Material.Neon
+local hackLoaded, hackModel = pcall(function()
+	return game:GetObjects("rbxassetid://102473641596712")[1]
+end)
+
+if hackLoaded and hackModel then
+	local hackLord = hackModel:FindFirstChild("HackLord") or hackModel
+	if hackLord then
+		-- Собираем источник оружия: Coffin -> ExtraModels -> сам HackLord
+		local weaponSource = hackLord:FindFirstChild("Coffin")
+			or hackLord:FindFirstChild("ExtraModels")
+			or hackLord:FindFirstChild("ErlkingCoffinChains")
+			or hackLord
+
+		local referencePart = nil
+		for _, p in ipairs(hackLord:GetDescendants()) do
+			if p:IsA("BasePart") then
+				referencePart = p
+				break
+			end
+		end
+
+		if weaponSource and referencePart then
+			local rootCF = referencePart.CFrame
+
+			-- Если оружие это Model - перебираем части
+			if weaponSource:IsA("Model") then
+				for _, part in ipairs(weaponSource:GetDescendants()) do
+					if part:IsA("BasePart") then
+						local clone = part:Clone()
+						clone.Anchored = false
+						clone.CanCollide = false
+						clone.Massless = true
+
+						-- Сохраняем относительную позицию относительно referencePart
+						local relCF = rootCF:Inverse() * part.CFrame
+
+						-- Велдим к SWORD
+						local weld = Instance.new("Weld")
+						weld.Part0 = SWORD
+						weld.Part1 = clone
+						weld.C0 = relCF
+						weld.C1 = CFrame.new()
+						weld.Parent = clone
+
+						clone.Parent = ARMOR
+						table.insert(PARTS, clone)
+					end
+				end
+			elseif weaponSource:IsA("BasePart") then
+				local clone = weaponSource:Clone()
+				clone.Anchored = false
+				clone.CanCollide = false
+				clone.Massless = true
+
+				local weld = Instance.new("Weld")
+				weld.Part0 = SWORD
+				weld.Part1 = clone
+				weld.C0 = CFrame.new()
+				weld.C1 = CFrame.new()
+				weld.Parent = clone
+
+				clone.Parent = ARMOR
+				table.insert(PARTS, clone)
 			end
 		end
 	end
-end)
+	hackModel:Destroy()
+end
 -- ============================================================
 
 local GUI = MODULE.ControlsGUI
